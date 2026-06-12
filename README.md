@@ -21,7 +21,7 @@ En Railway → tu servicio → **Variables**:
 
 | Variable | Valor |
 |---|---|
-| `SUPABASE_URL` | `https://ewhruuwvarxthbgimxyf.supabase.co` |
+| `SUPABASE_URL` | `https://exxxxxxxxx.supabase.co` |
 | `SUPABASE_ANON_KEY` | tu anon key (Project Settings → API en Supabase) |
 
 Railway añade `PORT` automáticamente — no hace falta configurarlo.
