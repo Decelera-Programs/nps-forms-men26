@@ -308,6 +308,25 @@
     .dot-sent    { background: #1D9E75; }
     .dot-missing { background: var(--cloud); }
 
+    .pending-filters {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .pf-btn {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      border: 1px solid #dde1e9;
+      background: transparent;
+      color: var(--cloud);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .pf-btn:hover { background: #f0f2f7; }
+    .pf-btn.active { background: var(--night); color: #fff; border-color: var(--night); }
+
     /* ── SEG GRID ── */
     .seg-nps-grid {
       display: grid;
@@ -566,8 +585,9 @@ function aggregateQuestions(respondents) {
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────
-let allData   = null;
-let currentSeg = 'all';
+let allData      = null;
+let currentSeg   = 'all';
+let pendingFilter = 'all';
 
 // ── RENDER ────────────────────────────────────────────────────────────
 function render() {
@@ -668,21 +688,33 @@ function render() {
   `).join('');
 
   // ── Tracker
-  const missing = withoutForm.map(r => r.full_name);
-  const sent    = respondents.map(r => r.name);
+  const sent = respondents.map(r => r.name);
 
-  // For segment views, missing = persons of that contact_type without forms
-  let segMissing = missing;
+  const CT_MAP = { founder: 'founder', em: 'experience_maker', vc: 'vc', portfolio: null };
+
+  // In segment views filter by that segment's contact_type; in all-view apply pendingFilter
+  let segMissing;
   if (seg !== 'all') {
-    const ctMap = { founder: 'founder', em: 'experience_maker', vc: 'vc', portfolio: null };
-    const ct = ctMap[seg];
+    const ct = CT_MAP[seg];
     segMissing = withoutForm
-      .filter(r => ct === null ? !r.contact_type : r.contact_type === ct)
-      .map(r => r.full_name);
+      .filter(r => ct === null ? !r.contact_type : r.contact_type === ct);
+  } else {
+    const pfCt = CT_MAP[pendingFilter];
+    segMissing = pendingFilter === 'all'
+      ? withoutForm
+      : withoutForm.filter(r => pfCt === null ? !r.contact_type : r.contact_type === pfCt);
   }
 
   document.getElementById('trackerBadge').textContent =
     `${sent.length} enviaron · ${segMissing.length} pendientes`;
+
+  const filterBtns = seg === 'all' ? `
+    <div class="pending-filters">
+      ${['all', 'founder', 'em', 'vc'].map(f => `
+        <button class="pf-btn ${pendingFilter === f ? 'active' : ''}" data-pf="${f}">
+          ${f === 'all' ? 'Todos' : SEG_LABELS[f]}
+        </button>`).join('')}
+    </div>` : '';
 
   document.getElementById('trackerGrid').innerHTML = `
     <div class="tracker-col">
@@ -694,15 +726,23 @@ function render() {
     </div>
     <div class="tracker-col">
       <div class="tracker-col-title">Pendientes (${segMissing.length})</div>
+      ${filterBtns}
       ${segMissing.length
-        ? segMissing.map(name => `
+        ? segMissing.map(r => `
             <div class="person-row">
-              <span class="dot dot-missing"></span>${name}
+              <span class="dot dot-missing"></span>${r.full_name}
             </div>`).join('')
         : '<div style="font-size:13px; color:var(--cloud); padding:4px 0">Todos respondieron ✓</div>'
       }
     </div>
   `;
+
+  document.querySelectorAll('.pf-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pendingFilter = btn.dataset.pf;
+      render();
+    });
+  });
 }
 
 // ── TABS ─────────────────────────────────────────────────────────────
