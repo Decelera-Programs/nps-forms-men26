@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NPS Dashboard · Menorca 2026 · decelera ventures</title>
+  <link href="https://fonts.googleapis.com/css2?family=Taviraj:wght@200;300&family=Fustat:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    :root {
+      --sand:  #FAF3DC;
+      --sun:   #FFB950;
+      --water: #1FD0EF;
+      --sea:   #1158E5;
+      --night: #2D3852;
+      --cloud: #B9C1D4;
+      --sky:   #F2F8FA;
+      --green: #1D9E75;
+      --amber: #BA7517;
+      --red:   #A32D2D;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Fustat', sans-serif;
+      background: var(--sky);
+      color: var(--night);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--night);
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo svg { width: 28px; height: 28px; }
+
+    .logo-text {
+      font-family: 'Taviraj', serif;
+      font-weight: 200;
+      font-size: 18px;
+      color: var(--sky);
+      letter-spacing: 0.02em;
+    }
+
+    .header-badge {
+      font-size: 12px;
+      color: var(--cloud);
+      background: rgba(255,255,255,0.08);
+      border: 0.5px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
+
+    /* ── LAYOUT ── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* ── PAGE TITLE ── */
+    .page-title {
+      font-family: 'Taviraj', serif;
+      font-weight: 200;
+      font-size: 36px;
+      color: var(--night);
+      margin-bottom: 0.25rem;
+    }
+
+    .page-sub {
+      font-size: 14px;
+      color: var(--cloud);
+      margin-bottom: 2rem;
+    }
+
+    /* ── SEGMENT TABS ── */
+    .seg-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 1.75rem;
+    }
+
+    .seg-tab {
+      padding: 7px 18px;
+      border-radius: 20px;
+      border: 0.5px solid var(--cloud);
+      background: #fff;
+      font-size: 13px;
+      font-family: 'Fustat', sans-serif;
+      cursor: pointer;
+      color: var(--night);
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .seg-tab:hover { background: var(--sky); }
+    .seg-tab.active { background: var(--night); color: #fff; border-color: var(--night); }
+
+    /* ── METRIC CARDS ── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.75rem;
+    }
+
+    .metric {
+      background: #fff;
+      border: 0.5px solid var(--cloud);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--cloud);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 500;
+      line-height: 1;
+      color: var(--night);
+    }
+
+    .metric-value.positive { color: #0F6E56; }
+    .metric-value.neutral  { color: var(--amber); }
+    .metric-value.negative { color: var(--red); }
+
+    .metric-sub {
+      font-size: 12px;
+      color: var(--cloud);
+      margin-top: 6px;
+    }
+
+    /* ── NPS BAR ── */
+    .nps-bar-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 1.75rem;
+    }
+
+    .nps-seg {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .nps-seg .ns-label { font-size: 11px; margin-bottom: 6px; opacity: 0.8; }
+    .nps-seg .ns-val   { font-size: 20px; font-weight: 500; }
+
+    .seg-promoter  { background: #E1F5EE; color: #085041; }
+    .seg-passive   { background: #FAEEDA; color: #633806; }
+    .seg-detractor { background: #FCEBEB; color: #501313; }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--cloud);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 12px;
+    }
+
+    /* ── QUESTIONS ── */
+    .questions { margin-bottom: 1.75rem; }
+
+    .q-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 0;
+      border-bottom: 0.5px solid #eef0f4;
+    }
+
+    .q-row:last-child { border-bottom: none; }
+
+    .q-label {
+      flex: 1;
+      font-size: 13px;
+      color: var(--night);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .q-bar-wrap {
+      width: 140px;
+      height: 7px;
+      background: #eef0f4;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .q-bar {
+      height: 7px;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .q-score {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--night);
+      width: 34px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ── DIVIDER ── */
+    hr {
+      border: none;
+      border-top: 0.5px solid #dde1e9;
+      margin: 1.5rem 0;
+    }
+
+    /* ── TRACKER DETAILS ── */
+    details {
+      border: 0.5px solid #dde1e9;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--cloud);
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary .arrow {
+      font-size: 18px;
+      transition: transform 0.2s;
+      display: inline-block;
+    }
+
+    details[open] summary .arrow { transform: rotate(180deg); }
+
+    .tracker-badge {
+      font-size: 12px;
+      background: var(--sky);
+      border: 0.5px solid var(--cloud);
+      border-radius: 20px;
+      padding: 2px 10px;
+      color: var(--night);
+      margin-left: 10px;
+    }
+
+    .tracker-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 0.5px solid #dde1e9;
+    }
+
+    .tracker-col { padding: 14px 16px; }
+    .tracker-col + .tracker-col { border-left: 0.5px solid #dde1e9; }
+
+    .tracker-col-title {
+      font-size: 11px;
+      color: var(--cloud);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+
+    .person-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--night);
+      padding: 3px 0;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-sent    { background: #1D9E75; }
+    .dot-missing { background: var(--cloud); }
+
+    /* ── SEG GRID ── */
+    .seg-nps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.75rem;
+    }
+
+    .seg-nps-card {
+      background: #fff;
+      border: 0.5px solid var(--cloud);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .seg-nps-card .sn-label { font-size: 12px; color: var(--cloud); margin-bottom: 6px; }
+    .seg-nps-card .sn-nps   { font-size: 24px; font-weight: 500; }
+    .seg-nps-card .sn-n     { font-size: 12px; color: var(--cloud); margin-top: 4px; }
+
+    /* ── LOADING / ERROR ── */
+    #loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      gap: 16px;
+      color: var(--cloud);
+      font-size: 14px;
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--cloud);
+      border-top-color: var(--sea);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #error-msg {
+      display: none;
+      background: #FCEBEB;
+      border: 0.5px solid #F09595;
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-size: 14px;
+      color: #501313;
+      margin-bottom: 1.5rem;
+    }
+
+    #dashboard { display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <!-- Tótem D inline SVG -->
+    <svg viewBox="0 0 84.4 84.4" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path fill="#1FD0EF" d="M42.2 6C22.3 6 6 22.3 6 42.2s16.3 36.2 36.2 36.2 36.2-16.3 36.2-36.2S62.1 6 42.2 6zm0 62.4C25.9 68.4 12.6 55 12.6 42.2 12.6 29.3 25.9 16 42.2 16c16.3 0 29.6 13.3 29.6 26.2 0 12.8-13.3 26.2-29.6 26.2z"/>
+      <text x="42.2" y="55" text-anchor="middle" font-family="serif" font-size="30" fill="#1FD0EF" font-weight="200">D</text>
+    </svg>
+    <span class="logo-text">decelera ventures</span>
+  </div>
+  <span class="header-badge" id="lastUpdated">cargando…</span>
+</header>
+
+<main>
+  <h1 class="page-title">Satisfaction Report</h1>
+  <p class="page-sub" id="pageSubtitle">Menorca 2026 · cargando datos…</p>
+
+  <div id="error-msg"></div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <span>Conectando con Supabase…</span>
+  </div>
+
+  <div id="dashboard">
+    <!-- Segment tabs -->
+    <div class="seg-tabs" id="segTabs"></div>
+
+    <!-- Metric cards -->
+    <div class="metrics" id="metrics"></div>
+
+    <!-- NPS promoter/passive/detractor bar -->
+    <div class="nps-bar-row" id="npsBar"></div>
+
+    <!-- NPS by segment (only shown in "all" view) -->
+    <div id="segNpsSection" style="display:none">
+      <div class="section-label">NPS por segmento</div>
+      <div class="seg-nps-grid" id="segNpsGrid"></div>
+      <hr>
+    </div>
+
+    <!-- Questions -->
+    <div class="section-label" id="qSectionLabel">Preguntas · promedio</div>
+    <div class="questions" id="questions"></div>
+
+    <hr>
+
+    <!-- Tracker -->
+    <details>
+      <summary>
+        <span>Seguimiento de envíos <span class="tracker-badge" id="trackerBadge"></span></span>
+        <span class="arrow">⌄</span>
+      </summary>
+      <div class="tracker-grid" id="trackerGrid"></div>
+    </details>
+  </div>
+</main>
+
+<script>
+const SUPABASE_URL      = '__SUPABASE_URL__';
+const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── helpers ──────────────────────────────────────────────────────────
+function avg(arr) {
+  const nums = arr.filter(n => n !== null && n !== undefined && !isNaN(n));
+  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : null;
+}
+
+function calcNPS(scores) {
+  const n = scores.length;
+  if (!n) return { nps: null, promoters: 0, passives: 0, detractors: 0, n: 0 };
+  const promoters  = scores.filter(s => s >= 9).length;
+  const detractors = scores.filter(s => s <= 6).length;
+  const passives   = n - promoters - detractors;
+  const nps        = Math.round((promoters / n - detractors / n) * 100);
+  return { nps, promoters, passives, detractors, n };
+}
+
+function npsClass(nps) {
+  if (nps === null) return '';
+  if (nps >= 50)   return 'positive';
+  if (nps >= 0)    return 'neutral';
+  return 'negative';
+}
+
+function npsSign(nps) {
+  if (nps === null) return '–';
+  return (nps >= 0 ? '+' : '') + nps;
+}
+
+function barColor(score) {
+  if (score >= 9) return '#1D9E75';
+  if (score >= 7) return '#1158E5';
+  return '#BA7517';
+}
+
+// ── KNOWN NPS question IDs per form ─────────────────────────────────
+// These are the "recommend" questions used for NPS calculation
+const NPS_QUESTION_KEYS = {
+  "Founder's Satisfaction -Menorca 2026":   'mWgV',  // recommend to other startups
+  "EM's Satisfaction - Menorca 2026":        'j6Wz',  // recommend to other EMs
+  "VC's Satisfaction - Menorca 2026":        'wEZq',  // recommend to other VCs
+  "Portfolio Satisfaction -Menorca 2026":    'mWgV',  // recommend to other startups
+};
+
+const FORM_SEGMENT = {
+  "Founder's Satisfaction -Menorca 2026":   'founder',
+  "EM's Satisfaction - Menorca 2026":       'em',
+  "VC's Satisfaction - Menorca 2026":       'vc',
+  "Portfolio Satisfaction -Menorca 2026":   'portfolio',
+};
+
+const SEG_LABELS = {
+  all:       'Todos',
+  founder:   'Founders',
+  em:        'Experience Makers',
+  vc:        'VCs',
+  portfolio: 'Portfolio',
+};
+
+// ── DATA PARSING ─────────────────────────────────────────────────────
+function parseRows(rows) {
+  // persons with forms
+  const withForm = rows.filter(r => r.nps_forms && r.nps_forms.answers);
+  // persons without forms (only EMs currently missing)
+  const withoutForm = rows.filter(r => !r.nps_forms || !r.nps_forms.answers);
+
+  // Build per-segment data
+  const segments = { founder: [], em: [], vc: [], portfolio: [] };
+
+  for (const row of withForm) {
+    const formName = row.nps_forms.form_name || '';
+    const seg = FORM_SEGMENT[formName];
+    if (!seg) continue;
+
+    const answers = row.nps_forms.answers;
+    const npsKey  = NPS_QUESTION_KEYS[formName];
+    const npsScore = npsKey && answers[npsKey] ? parseInt(answers[npsKey].value) : null;
+
+    // Build question map: { question_text: score }
+    const qMap = {};
+    for (const [, ans] of Object.entries(answers)) {
+      if (ans.type === 'Dropdown' && ans.question && ans.value !== undefined) {
+        qMap[ans.question] = parseInt(ans.value);
+      }
+    }
+
+    segments[seg].push({
+      name: row.full_name,
+      contact_type: row.contact_type,
+      form_name: formName,
+      submitted_at: row.nps_forms.submitted_at,
+      npsScore,
+      qMap,
+    });
+  }
+
+  return { segments, withoutForm };
+}
+
+// Aggregate questions across a list of respondent objects
+function aggregateQuestions(respondents) {
+  const qAccum = {};
+  for (const r of respondents) {
+    for (const [q, score] of Object.entries(r.qMap)) {
+      if (!qAccum[q]) qAccum[q] = [];
+      qAccum[q].push(score);
+    }
+  }
+  // Only include questions answered by at least 1 person
+  return Object.entries(qAccum)
+    .map(([q, scores]) => ({ q, avg: avg(scores), n: scores.length }))
+    .filter(x => x.avg !== null)
+    .sort((a, b) => b.avg - a.avg);
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────
+let allData   = null;
+let currentSeg = 'all';
+
+// ── RENDER ────────────────────────────────────────────────────────────
+function render() {
+  const { segments, withoutForm } = allData;
+  const seg = currentSeg;
+
+  // Which respondents are in scope
+  let respondents;
+  if (seg === 'all') {
+    respondents = [...segments.founder, ...segments.em, ...segments.vc, ...segments.portfolio];
+  } else {
+    respondents = segments[seg];
+  }
+
+  const npsScores = respondents.map(r => r.npsScore).filter(s => s !== null);
+  const { nps, promoters, passives, detractors, n } = calcNPS(npsScores);
+
+  // Overall experience avg (use question text matching)
+  const overallKeys = ['How satisfied are you with the overall experience of the whole program?',
+                       'How satisfied are you with the overall experience?',
+                       'How satisfied are you with the program overall?'];
+  const overallScores = respondents.flatMap(r =>
+    overallKeys.flatMap(k => r.qMap[k] !== undefined ? [r.qMap[k]] : [])
+  );
+  const overallAvg = avg(overallScores);
+
+  // ── Metrics
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric">
+      <div class="metric-label">NPS</div>
+      <div class="metric-value ${npsClass(nps)}">${npsSign(nps)}</div>
+      <div class="metric-sub">${n} respuesta${n !== 1 ? 's' : ''}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Experiencia overall</div>
+      <div class="metric-value">${overallAvg !== null ? overallAvg.toFixed(1) : '–'}<span style="font-size:16px; color:var(--cloud); font-weight:400">/10</span></div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Promotores</div>
+      <div class="metric-value positive">${promoters}<span style="font-size:16px; color:var(--cloud); font-weight:400"> / ${n}</span></div>
+      <div class="metric-sub">${n ? Math.round(promoters/n*100) : 0}% (≥ 9)</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Detractores</div>
+      <div class="metric-value ${detractors > 0 ? 'negative' : ''}">${detractors}<span style="font-size:16px; color:var(--cloud); font-weight:400"> / ${n}</span></div>
+      <div class="metric-sub">${n ? Math.round(detractors/n*100) : 0}% (≤ 6)</div>
+    </div>
+  `;
+
+  // ── NPS breakdown bar
+  document.getElementById('npsBar').innerHTML = `
+    <div class="nps-seg seg-promoter">
+      <div class="ns-label">Promotores (9–10)</div>
+      <div class="ns-val">${promoters} · ${n ? Math.round(promoters/n*100) : 0}%</div>
+    </div>
+    <div class="nps-seg seg-passive">
+      <div class="ns-label">Pasivos (7–8)</div>
+      <div class="ns-val">${passives} · ${n ? Math.round(passives/n*100) : 0}%</div>
+    </div>
+    <div class="nps-seg seg-detractor">
+      <div class="ns-label">Detractores (0–6)</div>
+      <div class="ns-val">${detractors} · ${n ? Math.round(detractors/n*100) : 0}%</div>
+    </div>
+  `;
+
+  // ── Per-segment NPS grid (only in "all" view)
+  const segSection = document.getElementById('segNpsSection');
+  if (seg === 'all') {
+    segSection.style.display = 'block';
+    const grid = document.getElementById('segNpsGrid');
+    grid.innerHTML = Object.entries(segments).map(([key, reps]) => {
+      const scores = reps.map(r => r.npsScore).filter(s => s !== null);
+      const { nps: sNps, n: sN } = calcNPS(scores);
+      return `
+        <div class="seg-nps-card">
+          <div class="sn-label">${SEG_LABELS[key]}</div>
+          <div class="sn-nps ${npsClass(sNps)}">${npsSign(sNps)}</div>
+          <div class="sn-n">${sN} respuesta${sN !== 1 ? 's' : ''}</div>
+        </div>`;
+    }).join('');
+  } else {
+    segSection.style.display = 'none';
+  }
+
+  // ── Questions
+  document.getElementById('qSectionLabel').textContent =
+    seg === 'all' ? 'Preguntas compartidas · promedio global' : `${SEG_LABELS[seg]} · resultados por pregunta`;
+
+  const qs = aggregateQuestions(respondents);
+  document.getElementById('questions').innerHTML = qs.map(({ q, avg: a, n: qn }) => `
+    <div class="q-row">
+      <span class="q-label" title="${q}">${q}</span>
+      <div class="q-bar-wrap">
+        <div class="q-bar" style="width:${(a/10*100).toFixed(1)}%; background:${barColor(a)}"></div>
+      </div>
+      <span class="q-score">${a.toFixed(1)}</span>
+    </div>
+  `).join('');
+
+  // ── Tracker
+  const missing = withoutForm.map(r => r.full_name);
+  const sent    = respondents.map(r => r.name);
+
+  // For segment views, missing = persons of that contact_type without forms
+  let segMissing = missing;
+  if (seg !== 'all') {
+    const ctMap = { founder: 'founder', em: 'experience_maker', vc: 'vc', portfolio: null };
+    const ct = ctMap[seg];
+    segMissing = withoutForm
+      .filter(r => ct === null ? !r.contact_type : r.contact_type === ct)
+      .map(r => r.full_name);
+  }
+
+  document.getElementById('trackerBadge').textContent =
+    `${sent.length} enviaron · ${segMissing.length} pendientes`;
+
+  document.getElementById('trackerGrid').innerHTML = `
+    <div class="tracker-col">
+      <div class="tracker-col-title">Enviaron (${sent.length})</div>
+      ${sent.map(name => `
+        <div class="person-row">
+          <span class="dot dot-sent"></span>${name}
+        </div>`).join('')}
+    </div>
+    <div class="tracker-col">
+      <div class="tracker-col-title">Pendientes (${segMissing.length})</div>
+      ${segMissing.length
+        ? segMissing.map(name => `
+            <div class="person-row">
+              <span class="dot dot-missing"></span>${name}
+            </div>`).join('')
+        : '<div style="font-size:13px; color:var(--cloud); padding:4px 0">Todos respondieron ✓</div>'
+      }
+    </div>
+  `;
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────
+function buildTabs() {
+  const tabs = ['all', 'founder', 'em', 'vc', 'portfolio'];
+  document.getElementById('segTabs').innerHTML = tabs.map(seg => `
+    <button class="seg-tab ${seg === currentSeg ? 'active' : ''}" data-seg="${seg}">
+      ${SEG_LABELS[seg]}
+    </button>
+  `).join('');
+
+  document.querySelectorAll('.seg-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSeg = btn.dataset.seg;
+      document.querySelectorAll('.seg-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    });
+  });
+}
+
+// ── LOAD DATA ─────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const { data: rows, error } = await client
+      .from('Person')
+      .select('full_name, contact_type, nps_forms')
+      .order('full_name');
+
+    if (error) throw error;
+
+    allData = parseRows(rows);
+
+    const totalForms = [
+      ...allData.segments.founder,
+      ...allData.segments.em,
+      ...allData.segments.vc,
+      ...allData.segments.portfolio,
+    ];
+
+    document.getElementById('pageSubtitle').textContent =
+      `Menorca 2026 · ${totalForms.length} respuestas · 4 segmentos`;
+
+    document.getElementById('lastUpdated').textContent =
+      `Actualizado ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+
+    document.getElementById('loading').style.display  = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+
+    buildTabs();
+    render();
+
+  } catch (err) {
+    document.getElementById('loading').style.display = 'none';
+    const errEl = document.getElementById('error-msg');
+    errEl.style.display = 'block';
+    errEl.textContent = `Error al cargar datos: ${err.message}`;
+    console.error(err);
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
