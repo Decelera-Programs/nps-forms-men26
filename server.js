@@ -20,7 +20,7 @@ const WHO_ARE_YOU_ID = {
 
 const KNOWN_FORM_IDS = new Set(Object.keys(WHO_ARE_YOU_ID));
 
-app.post('/webhook', async (req, res) => {
+app.post('/webhook/nps', async (req, res) => {
   try {
     const { formId, formName, submission } = req.body;
 
