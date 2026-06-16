@@ -57,11 +57,11 @@ app.post('/webhook', async (req, res) => {
       answers,
     };
 
-    // Find person by name (case-insensitive)
+    // personName is the Person UUID from the Fillout dropdown
     const { data: persons, error: findError } = await supabase
       .from('Person')
       .select('id, full_name')
-      .ilike('full_name', personName)
+      .eq('id', personName)
       .limit(1);
 
     if (findError) throw findError;
